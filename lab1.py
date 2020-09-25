@@ -29,7 +29,8 @@ def get_core_val(p: float = -1, q: float = 1, a: float = -1, b: float = 1, alpha
     xx, ksi_ksi = np.meshgrid(x, ksi)
     # Hermite polynomial 5
     c = (0, 0, 0, 0, 1)
-    core_val = np.exp(-xx ** 2 * ksi_ksi ** 2) * np.polynomial.hermite.hermval(alpha * xx * ksi_ksi, c)
+    # np.polynomial.hermite.hermval(alpha * xx * ksi_ksi, c)
+    core_val = np.exp(-xx ** 2 * ksi_ksi ** 2) * (32 * x ** 5 - 160 * x ** 3 + 120 * x)
     return core_val
 
 
@@ -38,7 +39,7 @@ def main():
     n = 2000
     m = 3000
     alpha = 1
-    beta = np.pi*2
+    beta = np.pi * 2
     a, b = -1, 1
     p, q = -2, -0.5
 
@@ -87,14 +88,14 @@ def main():
     # conversion function
     pylab.figure(2)
     ax1 = pylab.subplot(211)
-    pylab.xlabel("ksi")
+    pylab.xlabel("ξ")
     pylab.ylabel("Amplitude")
     ax1.set_title("Amplitude of conversion result," + f" alpha= {alpha},n={n},m={m}")
     pylab.plot(ksi, F_val_afin[0])
 
     ax2 = pylab.subplot(212)
     ax2.set_title("Angle of conversion result," + f" beta= {beta}")
-    pylab.xlabel("ksi")
+    pylab.xlabel("ξ")
     pylab.ylabel("Angle")
     # angle
     pylab.plot(ksi, F_val_afin[1])
