@@ -3,7 +3,7 @@
 import numpy as np
 import cmath
 import matplotlib
-import matplotlib.pylab as pylab
+from matplotlib import pylab
 
 
 # variant 11
@@ -30,18 +30,19 @@ def get_core_val(p: float = -1, q: float = 1, a: float = -1, b: float = 1, alpha
     # Hermite polynomial 5
     c = (0, 0, 0, 0, 1)
     # np.polynomial.hermite.hermval(alpha * xx * ksi_ksi, c)
-    core_val = np.exp(-xx ** 2 * ksi_ksi ** 2) * (32 * x ** 5 - 160 * x ** 3 + 120 * x)
+    hermit_arg = alpha * xx * ksi_ksi
+    core_val = np.exp(-xx ** 2 * ksi_ksi ** 2) * (32 * hermit_arg ** 5 - 160 * hermit_arg ** 3 + 120 * hermit_arg)
     return core_val
 
 
 def main():
     console_output = True
-    n = 2000
-    m = 3000
+    n = 100
+    m = 100
     alpha = 1
-    beta = np.pi * 2
+    beta = 1
     a, b = -1, 1
-    p, q = -2, -0.5
+    p, q = -1, 1
 
     x = np.linspace(a, b, n)
     ksi = np.linspace(p, q, m)
@@ -79,7 +80,7 @@ def main():
     pylab.plot(x, f_val_afin[0])
 
     ax2 = pylab.subplot(212)
-    ax2.set_title("Angle of input signal," + f"beta= {beta}")
+    ax2.set_title("Angle of input signal," + f" β= {beta}, [a,b] = [{a},{b}]")
     pylab.xlabel("x")
     pylab.ylabel("Angle")
     # angle
@@ -90,11 +91,11 @@ def main():
     ax1 = pylab.subplot(211)
     pylab.xlabel("ξ")
     pylab.ylabel("Amplitude")
-    ax1.set_title("Amplitude of conversion result," + f" alpha= {alpha},n={n},m={m}")
+    ax1.set_title("Amplitude of conversion result," + f" α= {alpha},n={n},m={m}")
     pylab.plot(ksi, F_val_afin[0])
 
     ax2 = pylab.subplot(212)
-    ax2.set_title("Angle of conversion result," + f" beta= {beta}")
+    ax2.set_title("Angle of conversion result," + f" β= {beta}, [p,q] = [{p},{q}]")
     pylab.xlabel("ξ")
     pylab.ylabel("Angle")
     # angle
