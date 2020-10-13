@@ -61,19 +61,22 @@ def ft_area_algo(f, n: int, a: float):
     left_index = ((m - n) // 2) - 1
     right_index = n + left_index
     F_val = F_val_added_zero[left_index: right_index] * h_x
+    get_b = lambda n, a: (n / (2 * a)) ** 2
 
     # checking results
     print(f"""The line segment is [{-a},{a}]
-x: \n{x}
 n= {n}
 m = {m}
+h_x = {h_x}
+x: \n{x}\n
 f_val is:\n{f_val}\n
 The result {F_val}\n
 """)
-    return x, f_val, F_val, h_x, n, m
+    return x, f_val, F_val, h_x, n, m, get_b(n, a)
 
 
-def draw_amplitude_and_phase(x, f_val, color: str = "blue", title_note: str = "", xlabel: str = "x", xlim=None):
+def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "", xlabel: str = "x", xlim=None,
+                             labels: list = None):
     """
     param x: abscissas of coordinates
     param f_val: array with complex elements
@@ -83,7 +86,20 @@ def draw_amplitude_and_phase(x, f_val, color: str = "blue", title_note: str = ""
     and increment the global variable curr_figure
     """
     global curr_figure
-    f_val_afin = (np.absolute(f_val), np.angle(f_val, deg=False))
+
+    x_list, f_val_list = [], []
+    if labels is None:
+        labels = [""] * len(x)
+    if not isinstance(colors, list):
+        colors = ("blue", "red", "green", "black", "purple", "pink")
+    if not isinstance(x, list):
+        x_list = [x]
+        f_val_afin = (np.absolute(f_val), np.angle(f_val, deg=False))
+        f_val_list = [f_val_afin]
+    else:
+        x_list = x
+        for i in range(len(f_val)):
+            f_val_list.append((np.absolute(f_val[i]), np.angle(f_val[i], deg=False)))
 
     pylab.figure(curr_figure)
     curr_figure = curr_figure + 1
@@ -93,16 +109,16 @@ def draw_amplitude_and_phase(x, f_val, color: str = "blue", title_note: str = ""
     pylab.ylabel("Amplitude")
     axes1.set_title("Amplitude of " + title_note)
     pylab.xlim(xlim) if xlim is not None else None
-    pylab.plot(x, f_val_afin[0], color=color)
+    for i in range(len(x_list)):
+        pylab.plot(x_list[i], f_val_list[i][0], color=colors[i], label=labels[i])
 
     axes2 = pylab.subplot(212)
     pylab.xlabel(xlabel)
     pylab.ylabel("Angle")
     axes2.set_title("Angle of " + title_note)
     pylab.xlim(xlim) if xlim is not None else None
-    pylab.plot(x, f_val_afin[1], color=color)
-
-    print(f"xlim= {xlim}")
+    for i in range(len(x_list)):
+        pylab.plot(x_list[i], f_val_list[i][1], color=colors[i], label=labels[i])
 
 
 def tests():
@@ -121,12 +137,20 @@ def main():
     n = 100
     a = 5
     s = 1
-    x, f_val, F_val, h_x, n, m = ft_area_algo(get_gauss(s), n, a)
+    x, f_val, F_val, h_x, n, m, b = ft_area_algo(get_gauss(s), n, a)
+    x_for_b = np.linspace(-b, b, n)
+
     border_x = np.array([-a, a])  # + [-0.5, 0.5]
-    gauss_note = f"Gauss,s={s}, a = {a}, n={n}, m={m}"
-    ff_gaus = f"fft of Gauss, a = {a} "
-    draw_amplitude_and_phase(x, f_val, title_note=gauss_note)
-    draw_amplitude_and_phase(x, F_val, title_note=ff_gaus)
+    gauss_note = f"Gauss, s={s}"
+    ff_gaus = f"fft of Gauss, b = {b}"
+    amn = f", a = {a}, n={n}, m={m}"
+    union_note = gauss_note + " and " + ff_gaus + amn
+    labels = ["Gauss", " fft Gauss"]
+
+    draw_amplitude_and_phase([x, x_for_b], [f_val, F_val], title_note=union_note, labels=labels)
+    draw_amplitude_and_phase(x, f_val, title_note=gauss_note + amn)
+    draw_amplitude_and_phase(x_for_b, F_val, title_note=ff_gaus + amn)
+    pylab.legend()
     pylab.show()
 
 
