@@ -23,7 +23,7 @@ def get_m(n: int):
 def swap_half_array_between(x: (np.array, np.ndarray, np.nditer)):
     """swap the first half and the second half of array"""
     n = len(x)
-    ans = np.ndarray(shape=(n,))
+    ans = np.ndarray(shape=(n,), dtype=complex)
     # copy to rewrite
     ans[:n // 2] = np.array(x[n // 2:])
     ans[n // 2:] = np.array(x[:n // 2])
@@ -65,13 +65,13 @@ def ft_finite_algo(f_val, a: float, h_x: float):
     get_b = lambda n, a: (n ** 2 / (4 * a * m))
 
     # checking results
-    print(f"""The line segment is [{-a},{a}]
-n= {n}
-m = {m}
-h_x = {h_x}
-f_val is:\n{f_val}\n
-The result {F_val}\n
-""")
+#     print(f"""The line segment is [{-a},{a}]
+# n= {n}
+# m = {m}
+# h_x = {h_x}
+# f_val is:\n{f_val}\n
+# The result {F_val}\n
+# """)
     return F_val, m, get_b(n, a)
 
 
@@ -79,7 +79,7 @@ def ft_finite_num(a: float, n: int, f):
     m = get_m(n)
     b = (n ** 2 / (4 * a * m))
     h_b = 2 * b / (n - 1)
-    y = np.zeros(n, dtype=complex)
+    y = np.zeros(n, dtype=np.complex_)
     for i in range(n):
         u = -b + i * h_b
         integrate_func = lambda x: f(x) * np.exp(-2 * np.pi * u * x * complex(0, 1))
@@ -124,6 +124,7 @@ def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "
     pylab.xlim(xlim) if xlim is not None else None
     for i in range(len(x_list)):
         pylab.plot(x_list[i], f_val_list[i][0], color=colors[i], label=labels[i])
+    pylab.legend()
 
     axes2 = pylab.subplot(212)
     pylab.xlabel(xlabel)
@@ -132,6 +133,13 @@ def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "
     pylab.xlim(xlim) if xlim is not None else None
     for i in range(len(x_list)):
         pylab.plot(x_list[i], f_val_list[i][1], color=colors[i], label=labels[i])
+
+    print(labels)
+
+
+def tri(x):
+    abs_x = np.abs(x)
+    return np.where(abs_x < 1, 1 - abs_x, 0)
 
 
 def tests():
@@ -143,11 +151,16 @@ def tests():
     # m = 8
     # x = [1, 2, 3, 4]
     # x_res = add_zeros(x, m)
+
+    # x = np.linspace(-2, 2, 20)
+    # tri_val = tri(x)
+    # print(x)
+    # print(tri_val)
     pass
 
 
-def main():
-    n = 100
+def gauss_fft_script():
+    n = 110
     a = 5
     s = 1
     x, h_x = np.linspace(-a, a, n, retstep=True)
@@ -157,15 +170,15 @@ def main():
     x_for_b = np.linspace(-b, b, n)
     print(f"fft: h_x={h_x}, m={m}, b={b}")
 
-    F_tri_val, mm, bb = ft_finite_num(a, n, gauss)
+    F_num_val, mm, bb = ft_finite_num(a, n, gauss)
     # F_tri_val_arg = left_triangle_Fourier_arg(f_val, x, x_for_b)
     print(f"fft: m={mm}, b={bb}")
     print(
         f"""difference in values
-    F_val:{np.max(np.abs(F_tri_val - F_val))}
-    m:{np.max(np.abs(m - mm))}
-    b:{np.max(np.abs(b - bb))}
-""")
+        F_val:{np.max(np.abs(F_num_val - F_val))}
+        m:{np.max(np.abs(m - mm))}
+        b:{np.max(np.abs(b - bb))}
+    """)
 
     border_x = np.array([-a, a])  # + [-0.5, 0.5]
     gauss_note = f"Gauss, s={s}"
@@ -175,12 +188,41 @@ def main():
     union_note = gauss_note + " and " + ff_gaus + amn
     labels = ["left triangle Gauss", " fft Gauss", " Gauss"]
 
-    draw_amplitude_and_phase([x_for_b, x_for_b, x], [F_tri_val, F_val, y],
+    draw_amplitude_and_phase([x_for_b, x_for_b, x], [F_num_val, F_val, y],
                              title_note=union_note, labels=labels)
     draw_amplitude_and_phase(x, y, title_note=gauss_note + amn)
     # draw_amplitude_and_phase(x_for_b, F_val, title_note=ff_gaus + amn)
-    # draw_amplitude_and_phase(x_for_b, F_tri_val, title_note=left_trian_Fourier_note)
+    # draw_amplitude_and_phase(x_for_b, F_num_val, title_note=left_trian_Fourier_note)
     # pylab.legend()
+
+
+def tri_fft_script():
+    n = 90
+    a = 2
+    x, h_x = np.linspace(-a, a, n, retstep=True)
+    y = tri(x)
+    F_val, m, b = ft_finite_algo(y, a, h_x)
+    x_for_b = np.linspace(-b, b, n)
+    analicit = np.sinc(x_for_b) ** 2
+
+    F_num_val, mm, bb = ft_finite_num(a, n, tri)
+
+
+    labels=[
+        "numeric",
+        "algo",
+        "analitic"
+    ]
+    xlim = None#[-2.1,-1.9]
+
+    draw_amplitude_and_phase(x, y, title_note="triangle")
+    draw_amplitude_and_phase([x_for_b, x_for_b, x_for_b], [F_num_val, F_val, analicit],
+                             title_note="fft and ft of tri b=%s" %(str(b)),xlim=xlim)
+
+
+def main():
+    # gauss_fft_script()
+    tri_fft_script()
     pylab.show()
 
 
