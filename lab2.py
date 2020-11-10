@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.fft import fft
 from matplotlib import pylab
+from scipy import integrate
 
 curr_figure = 0
 
@@ -40,41 +41,51 @@ def add_zeros(x, m):
     return zero
 
 
-def ft_area_algo(f, n: int, a: float, ft):
+def ft_finite_algo(f_val, a: float, h_x: float):
     """
-    param f: function
+    param f_val: function values
     param n: needed vector point count
     param a: the right border of line segment [-a,a]
     param ft: Fourier transform
     return F,b
     Fourier transform and the right border of line segment [-b,b]
     """
-    x, h_x = np.linspace(-a, a, n, retstep=True)
-    f_val = f(x)
     n = len(f_val)
     m = get_m(n)
     f_val_added_zero = add_zeros(f_val, m)
     f_val_added_swapped = swap_half_array_between(f_val_added_zero)
 
-    F_val_added_swapped = ft(f_val_added_swapped)
+    F_val_added_swapped = np.fft.fft(f_val_added_swapped)
     F_val_added_zero = swap_half_array_between(F_val_added_swapped)
     # cut n values
     left_index = (m - n) // 2
     # 0 1 2 3 | 4 5 6 7 | 8 9 10 11 | 12 13 14 15
     right_index = n + left_index
     F_val = F_val_added_zero[left_index: right_index] * h_x
-    get_b = lambda n, a: (n / (2 * a)) ** 2
+    get_b = lambda n, a: (n ** 2 / (4 * a * m))
 
     # checking results
     print(f"""The line segment is [{-a},{a}]
 n= {n}
 m = {m}
 h_x = {h_x}
-x: \n{x}\n
 f_val is:\n{f_val}\n
 The result {F_val}\n
 """)
-    return x, f_val, F_val, h_x, m, get_b(n, a)
+    return F_val, m, get_b(n, a)
+
+
+def ft_finite_num(a: float, n: int, f):
+    m = get_m(n)
+    b = (n ** 2 / (4 * a * m))
+    h_b = 2 * b / (n - 1)
+    y = np.zeros(n, dtype=complex)
+    for i in range(n):
+        u = -b + i * h_b
+        integrate_func = lambda x: f(x) * np.exp(-2 * np.pi * u * x * complex(0, 1))
+        y[i] = integrate.quad(integrate_func, -a, a)[0]
+        del integrate_func
+    return y, m, b
 
 
 def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "", xlabel: str = "x", xlim=None,
@@ -123,33 +134,6 @@ def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "
         pylab.plot(x_list[i], f_val_list[i][1], color=colors[i], label=labels[i])
 
 
-def left_triangle_Fourier(f_val):
-    arg = None
-    N = len(f_val)
-    xx = np.linspace(0, N, N)
-    xx, ksi_ksi = np.meshgrid(xx, xx)
-    core_val = np.exp(-2 * np.pi * 1j * xx * ksi_ksi / N)
-    # print(f"core_val \n{core_val}\nshpape {core_val.shape}")
-    temp = f_val[len(f_val) - 1]
-    f_val[len(f_val) - 1] = 0
-    # left triangle method integrating
-    F_val = np.matmul(core_val, f_val)
-    f_val[len(f_val) - 1] = temp
-    return F_val
-
-
-def left_triangle_Fourier_arg(f_val, x, ksi):
-    arg = None
-    N = len(f_val)
-    xx, ksi_ksi = np.meshgrid(x, ksi)
-    core_val = np.exp(-2 * np.pi * 1j * xx * ksi_ksi)
-    # print(f"core_val \n{core_val}\nshpape {core_val.shape}")
-
-    # left triangle method integrating
-    F_val = np.matmul(core_val, f_val)
-    return F_val
-
-
 def tests():
     # # swap test
     # ar = np.array([1, 2, 3, 4])
@@ -166,19 +150,19 @@ def main():
     n = 100
     a = 5
     s = 1
-    x, f_val, F_val, h_x, m, b = ft_area_algo(get_gauss(s), n, a, fft)
+    x, h_x = np.linspace(-a, a, n, retstep=True)
+    gauss = get_gauss(s)
+    y = gauss(x)
+    F_val, m, b = ft_finite_algo(y, a, h_x)
     x_for_b = np.linspace(-b, b, n)
     print(f"fft: h_x={h_x}, m={m}, b={b}")
 
-    xx, ff_val, F_tri_val, hh_x, mm, bb = ft_area_algo(get_gauss(s), n, a, left_triangle_Fourier)
+    F_tri_val, mm, bb = ft_finite_num(a, n, gauss)
     # F_tri_val_arg = left_triangle_Fourier_arg(f_val, x, x_for_b)
-    print(f"fft: hh_x={hh_x}, m={mm}, b={bb}")
+    print(f"fft: m={mm}, b={bb}")
     print(
         f"""difference in values
-    x:{np.max(np.abs(x - xx))}
-    f_val:{np.max(np.abs(f_val - ff_val))}
     F_val:{np.max(np.abs(F_tri_val - F_val))}
-    h_x:{np.max(np.abs(h_x - hh_x))}
     m:{np.max(np.abs(m - mm))}
     b:{np.max(np.abs(b - bb))}
 """)
@@ -190,11 +174,10 @@ def main():
     amn = f", a = {a}, n={n}, m={m}"
     union_note = gauss_note + " and " + ff_gaus + amn
     labels = ["left triangle Gauss", " fft Gauss", " Gauss"]
-    left_trian_Fourier_note = "Fourier of Gauss left triangle" + b_note
 
-    draw_amplitude_and_phase([x_for_b, x_for_b, x], [F_tri_val, F_val, f_val],
+    draw_amplitude_and_phase([x_for_b, x_for_b, x], [F_tri_val, F_val, y],
                              title_note=union_note, labels=labels)
-    draw_amplitude_and_phase(x, f_val, title_note=gauss_note + amn)
+    draw_amplitude_and_phase(x, y, title_note=gauss_note + amn)
     # draw_amplitude_and_phase(x_for_b, F_val, title_note=ff_gaus + amn)
     # draw_amplitude_and_phase(x_for_b, F_tri_val, title_note=left_trian_Fourier_note)
     # pylab.legend()
