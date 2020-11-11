@@ -10,6 +10,10 @@ def get_gauss(s: (int, float, complex)):
     return lambda x: np.exp(-np.dot(s, x ** 2))
 
 
+def get_gauss_2d(s: (int, float, complex), p: (int, float, complex)):
+    return lambda x, y: np.exp(-(s * x ** 2 + p * y ** 2))
+
+
 def get_m(n: int):
     # получаем номер старшего не знакового бита равного единице
     elder_bit_num = int.bit_length(n) + 1
@@ -65,13 +69,13 @@ def ft_finite_algo(f_val, a: float, h_x: float):
     get_b = lambda n, a: (n ** 2 / (4 * a * m))
 
     # checking results
-#     print(f"""The line segment is [{-a},{a}]
-# n= {n}
-# m = {m}
-# h_x = {h_x}
-# f_val is:\n{f_val}\n
-# The result {F_val}\n
-# """)
+    #     print(f"""The line segment is [{-a},{a}]
+    # n= {n}
+    # m = {m}
+    # h_x = {h_x}
+    # f_val is:\n{f_val}\n
+    # The result {F_val}\n
+    # """)
     return F_val, m, get_b(n, a)
 
 
@@ -89,7 +93,7 @@ def ft_finite_num(a: float, n: int, f):
 
 
 def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "", xlabel: str = "x", xlim=None,
-                             labels: list = None):
+                             labels: list = None, alpha: float = 1):
     """
     param x: abscissas of coordinates
     param f_val: array with complex elements
@@ -101,10 +105,12 @@ def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "
     global curr_figure
 
     x_list, f_val_list = [], []
+    is_legend_on = True
     if labels is None:
+        is_legend_on = False
         labels = [""] * len(x)
     if not isinstance(colors, list):
-        colors = ("blue", "red", "green", "black", "purple", "pink")
+        colors = ("blue", "red", "green", "pink", "yellow", "purple", "black")
     if not isinstance(x, list):
         x_list = [x]
         f_val_afin = (np.absolute(f_val), np.angle(f_val, deg=False))
@@ -117,24 +123,21 @@ def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "
     pylab.figure(curr_figure)
     curr_figure = curr_figure + 1
 
-    axes1 = pylab.subplot(211)
-    pylab.xlabel(xlabel)
-    pylab.ylabel("Amplitude")
-    axes1.set_title("Amplitude of " + title_note)
-    pylab.xlim(xlim) if xlim is not None else None
+    fig, axes = pylab.subplots(2, 1)
+    axes[0].set_xlabel(xlabel)
+    axes[0].set_ylabel("Amplitude")
+    axes[0].set_title("Amplitude of " + title_note)
+    axes[0].xlim(xlim) if xlim is not None else None
     for i in range(len(x_list)):
-        pylab.plot(x_list[i], f_val_list[i][0], color=colors[i], label=labels[i])
-    pylab.legend()
+        axes[0].plot(x_list[i], f_val_list[i][0], color=colors[i], label=labels[i], alpha=alpha)
+    axes[0].legend() if is_legend_on else None
 
-    axes2 = pylab.subplot(212)
-    pylab.xlabel(xlabel)
-    pylab.ylabel("Angle")
-    axes2.set_title("Angle of " + title_note)
-    pylab.xlim(xlim) if xlim is not None else None
+    axes[1].set_xlabel(xlabel)
+    axes[1].set_ylabel("Phase")
+    axes[1].set_title("Phase of " + title_note)
+    axes[1].xlim(xlim) if xlim is not None else None
     for i in range(len(x_list)):
-        pylab.plot(x_list[i], f_val_list[i][1], color=colors[i], label=labels[i])
-
-    print(labels)
+        axes[1].plot(x_list[i], f_val_list[i][1], color=colors[i], label=labels[i], alpha=alpha)
 
 
 def tri(x):
@@ -142,7 +145,13 @@ def tri(x):
     return np.where(abs_x < 1, 1 - abs_x, 0)
 
 
+def tri2d(x, y):
+    # https://www.sciencedirect.com/science/article/pii/S0895717711007266
+    return tri(x) * tri(y)
+
+
 def tests():
+    global curr_figure
     # # swap test
     # ar = np.array([1, 2, 3, 4])
     # ar_swaped = swap_half_array_between(ar)
@@ -152,10 +161,20 @@ def tests():
     # x = [1, 2, 3, 4]
     # x_res = add_zeros(x, m)
 
-    # x = np.linspace(-2, 2, 20)
+    x = np.linspace(-2, 2, 100)
     # tri_val = tri(x)
     # print(x)
     # print(tri_val)
+    xx, yy = np.meshgrid(x, x)
+    z = tri2d(xx, yy)
+
+    figure = pylab.figure(curr_figure)
+    curr_figure = curr_figure + 1
+
+    ax = figure.add_subplot(111, projection='3d')
+    ax.plot_wireframe(xx, yy, z)
+    pylab.show()
+
     pass
 
 
@@ -196,6 +215,23 @@ def gauss_fft_script():
     # pylab.legend()
 
 
+def gauss_2d_fft_script():
+    n = 100
+    a = 5
+    s = 1
+    p = 1
+    x, h_x = np.linspace(-a, a, retstep=True)
+    gauss_2d = get_gauss_2d(s, p)
+    z = gauss_2d(x, x)
+    np.fft.fft2
+
+
+def main():
+    # gauss_fft_script()
+    tri_fft_script()
+    pylab.show()
+
+
 def tri_fft_script():
     n = 90
     a = 2
@@ -207,25 +243,18 @@ def tri_fft_script():
 
     F_num_val, mm, bb = ft_finite_num(a, n, tri)
 
-
-    labels=[
+    labels = [
         "numeric",
         "algo",
         "analitic"
     ]
-    xlim = None#[-2.1,-1.9]
+    xlim = None  # [-2.1,-1.9]
 
     draw_amplitude_and_phase(x, y, title_note="triangle")
     draw_amplitude_and_phase([x_for_b, x_for_b, x_for_b], [F_num_val, F_val, analicit],
-                             title_note="fft and ft of tri b=%s" %(str(b)),xlim=xlim)
-
-
-def main():
-    # gauss_fft_script()
-    tri_fft_script()
-    pylab.show()
+                             title_note="fft and ft of tri b=%s" % (str(b)), xlim=xlim, labels=labels)
 
 
 if __name__ == '__main__':
-    # tests()
-    main()
+    tests()
+    # main()
