@@ -79,7 +79,19 @@ def ft_finite_algo(f_val, a: float, h_x: float):
     return F_val, m, get_b(n, a)
 
 
-def ft_finite_num(a: float, n: int, f):
+def ft_finite_algo_2d(matrix, a: float, h_x: float):
+    n = matrix.shape[0]
+    m, b = None, None
+    for i in range(n):
+        matrix[i], m, b = ft_finite_algo(matrix[i], a, h_x)
+
+    for j in range(n):
+        matrix[:, j], m, b = ft_finite_algo(matrix[:, j], a, h_x)
+
+    return matrix, m, b
+
+
+def ft_finite_num(f, a: float, n: int):
     m = get_m(n)
     b = (n ** 2 / (4 * a * m))
     h_b = 2 * b / (n - 1)
@@ -92,8 +104,25 @@ def ft_finite_num(a: float, n: int, f):
     return y, m, b
 
 
+def ft_finite_num_2d(f, a: float, n: int):
+    m, b = None, None
+    matrix = np.zeros((n, n), dtype=np.complex_)
+    # из-за разделимости функции двойной интеграл можно переписать
+    # через произведение интегралов по отдельным переменным, то есть через 1D преобразования
+    for i in range(n):
+        matrix[i], m, b = ft_finite_num(f, a, n)
+        print(i)
+    print()
+    for j in range(n):
+        ans = ft_finite_num(f, a, n)
+        print(f"j = {j}")
+        matrix[:, j], m, b = matrix[:, j] * ans[0], ans[1], ans[2]
+
+    return matrix, m, b
+
+
 def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "", xlabel: str = "x", xlim=None,
-                             labels: list = None, alpha: float = 1):
+                             labels: list = None, alpha: float = 1, is_vertical=True):
     """
     param x: abscissas of coordinates
     param f_val: array with complex elements
@@ -123,7 +152,11 @@ def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "
     pylab.figure(curr_figure)
     curr_figure = curr_figure + 1
 
-    fig, axes = pylab.subplots(2, 1)
+    fig, axes = None, None
+    if is_vertical:
+        fig, axes = pylab.subplots(2, 1)
+    else:
+        fig, axes = pylab.subplots(1, 2)
     axes[0].set_xlabel(xlabel)
     axes[0].set_ylabel("Amplitude")
     axes[0].set_title("Amplitude of " + title_note)
@@ -137,7 +170,21 @@ def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "
     axes[1].set_title("Phase of " + title_note)
     axes[1].xlim(xlim) if xlim is not None else None
     for i in range(len(x_list)):
-        axes[1].plot(x_list[i], f_val_list[i][1], color=colors[i], label=labels[i], alpha=alpha)
+        axes[0].plot(x_list[i], f_val_list[i][1], color=colors[i], label=labels[i], alpha=alpha)
+
+
+def draw_amplitude_and_phase_image(image, titles=None):
+    global curr_figure
+    pylab.figure(curr_figure)
+    curr_figure = curr_figure + 1
+
+    fig, axes = pylab.subplots(1, 2, figsize=(12, 5))
+    amplitude = axes[0].imshow(np.absolute(image), cmap="hot")
+    phase = axes[1].imshow(np.angle(image), cmap="hot")
+    fig.colorbar(phase, ax=axes[1])
+    if titles is not None:
+        for i in range(2):
+            axes[i].set_title(titles[i])
 
 
 def tri(x):
@@ -148,34 +195,6 @@ def tri(x):
 def tri2d(x, y):
     # https://www.sciencedirect.com/science/article/pii/S0895717711007266
     return tri(x) * tri(y)
-
-
-def tests():
-    global curr_figure
-    # # swap test
-    # ar = np.array([1, 2, 3, 4])
-    # ar_swaped = swap_half_array_between(ar)
-    # print(f"before:\n{ar}\nafter:\n{ar_swaped}")
-
-    # m = 8
-    # x = [1, 2, 3, 4]
-    # x_res = add_zeros(x, m)
-
-    x = np.linspace(-2, 2, 100)
-    # tri_val = tri(x)
-    # print(x)
-    # print(tri_val)
-    xx, yy = np.meshgrid(x, x)
-    z = tri2d(xx, yy)
-
-    figure = pylab.figure(curr_figure)
-    curr_figure = curr_figure + 1
-
-    ax = figure.add_subplot(111, projection='3d')
-    ax.plot_wireframe(xx, yy, z)
-    pylab.show()
-
-    pass
 
 
 def gauss_fft_script():
@@ -217,19 +236,22 @@ def gauss_fft_script():
 
 def gauss_2d_fft_script():
     n = 100
-    a = 5
+    a = 4
     s = 1
     p = 1
     x, h_x = np.linspace(-a, a, retstep=True)
     gauss_2d = get_gauss_2d(s, p)
-    z = gauss_2d(x, x)
-    np.fft.fft2
+    xx, yy = np.meshgrid(x, x)
+    z = gauss_2d(xx, yy)
+    F_val, m, b = ft_finite_algo_2d(z, a, h_x)
+    F_num_val, m, b = ft_finite_num_2d(get_gauss(1), a, n)
 
+    # print(F_val.shape)
+    # print(F_num_val.shape)
 
-def main():
-    # gauss_fft_script()
-    tri_fft_script()
-    pylab.show()
+    draw_amplitude_and_phase_image(z)
+    draw_amplitude_and_phase_image(F_val)
+    draw_amplitude_and_phase_image(F_num_val)
 
 
 def tri_fft_script():
@@ -241,7 +263,7 @@ def tri_fft_script():
     x_for_b = np.linspace(-b, b, n)
     analicit = np.sinc(x_for_b) ** 2
 
-    F_num_val, mm, bb = ft_finite_num(a, n, tri)
+    F_num_val, mm, bb = ft_finite_num(tri, a, n)
 
     labels = [
         "numeric",
@@ -255,6 +277,56 @@ def tri_fft_script():
                              title_note="fft and ft of tri b=%s" % (str(b)), xlim=xlim, labels=labels)
 
 
+def tri_fft_script_2d():
+    n = 100
+    a = 4
+    x, h_x = np.linspace(-a, a, retstep=True)
+    xx, yy = np.meshgrid(x, x)
+    z = tri2d(xx, yy)
+    F_val, m, b = ft_finite_algo_2d(z, a, h_x)
+    F_num_val, m, b = ft_finite_num_2d(tri, a, n)
+
+    draw_amplitude_and_phase_image(z)
+    draw_amplitude_and_phase_image(F_val)
+    draw_amplitude_and_phase_image(F_num_val)
+
+
+def main():
+    # gauss_fft_script()
+    # tri_fft_script()
+    # gauss_2d_fft_script()
+    tri_fft_script_2d()
+    pylab.show()
+
+
+def tests():
+    global curr_figure
+    # # swap test
+    # ar = np.array([1, 2, 3, 4])
+    # ar_swaped = swap_half_array_between(ar)
+    # print(f"before:\n{ar}\nafter:\n{ar_swaped}")
+
+    # m = 8
+    # x = [1, 2, 3, 4]
+    # x_res = add_zeros(x, m)
+
+    x = np.linspace(-2, 2, 100)
+    # tri_val = tri(x)
+    # print(x)
+    # print(tri_val)
+    xx, yy = np.meshgrid(x, x)
+    z = tri2d(xx, yy)
+
+    figure = pylab.figure(curr_figure)
+    curr_figure = curr_figure + 1
+
+    ax = figure.add_subplot(111, projection='3d')
+    ax.plot_wireframe(xx, yy, z)
+    pylab.show()
+
+    pass
+
+
 if __name__ == '__main__':
-    tests()
-    # main()
+    # tests()
+    main()
