@@ -82,13 +82,14 @@ def ft_finite_algo(f_val, a: float, h_x: float):
 def ft_finite_algo_2d(matrix, a: float, h_x: float):
     n = matrix.shape[0]
     m, b = None, None
+    answer = np.zeros(matrix.shape)
     for i in range(n):
-        matrix[i], m, b = ft_finite_algo(matrix[i], a, h_x)
+        answer[i, :], m, b = ft_finite_algo(matrix[i, :], a, h_x)
 
     for j in range(n):
-        matrix[:, j], m, b = ft_finite_algo(matrix[:, j], a, h_x)
+        answer[:, j], m, b = ft_finite_algo(answer[:, j], a, h_x)
 
-    return matrix, m, b
+    return answer, m, b
 
 
 def ft_finite_num(f, a: float, n: int):
@@ -105,6 +106,7 @@ def ft_finite_num(f, a: float, n: int):
 
 
 def ft_finite_num_2d(f, a: float, n: int):
+    # Doesn't need. I am silly and done it. And it works very slowly.
     m, b = None, None
     matrix = np.zeros((n, n), dtype=np.complex_)
     # из-за разделимости функции двойной интеграл можно переписать
@@ -170,13 +172,14 @@ def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "
     axes[1].set_title("Phase of " + title_note)
     axes[1].xlim(xlim) if xlim is not None else None
     for i in range(len(x_list)):
-        axes[0].plot(x_list[i], f_val_list[i][1], color=colors[i], label=labels[i], alpha=alpha)
+        axes[1].plot(x_list[i], f_val_list[i][1], color=colors[i], label=labels[i], alpha=alpha)
 
 
 def draw_amplitude_and_phase_image(image, titles=None):
     global curr_figure
     pylab.figure(curr_figure)
     curr_figure = curr_figure + 1
+    print(f"cur_figure {curr_figure}")
 
     fig, axes = pylab.subplots(1, 2, figsize=(12, 5))
     amplitude = axes[0].imshow(np.absolute(image), cmap="hot")
@@ -185,6 +188,17 @@ def draw_amplitude_and_phase_image(image, titles=None):
     if titles is not None:
         for i in range(2):
             axes[i].set_title(titles[i])
+
+
+def draw_3d_surface(x, y, z, title=None):
+    global curr_figure
+    curr_figure = curr_figure + 1
+    figure = pylab.figure(curr_figure)
+    print(f"cur_figure {curr_figure} 3dd")
+
+    ax = figure.add_subplot(111, projection='3d')
+    ax.plot_wireframe(x, y, z)
+    ax.set_title(title) if title is not None else None
 
 
 def tri(x):
@@ -256,7 +270,7 @@ def gauss_2d_fft_script():
 
 def tri_fft_script():
     n = 90
-    a = 2
+    a = 4
     x, h_x = np.linspace(-a, a, n, retstep=True)
     y = tri(x)
     F_val, m, b = ft_finite_algo(y, a, h_x)
@@ -279,21 +293,27 @@ def tri_fft_script():
 
 def tri_fft_script_2d():
     n = 100
-    a = 4
-    x, h_x = np.linspace(-a, a, retstep=True)
+    a = 2
+    x, h_x = np.linspace(-a, a, n, retstep=True)
     xx, yy = np.meshgrid(x, x)
     z = tri2d(xx, yy)
     F_val, m, b = ft_finite_algo_2d(z, a, h_x)
-    F_num_val, m, b = ft_finite_num_2d(tri, a, n)
+    analitic = (np.sinc(xx) * np.sinc(yy)) ** 2
+    x_b = np.linspace(-b, b, n)
+    xx_b, yy_b = np.meshgrid(x_b, x_b)
+    print(F_val.shape)
 
-    draw_amplitude_and_phase_image(z)
-    draw_amplitude_and_phase_image(F_val)
-    draw_amplitude_and_phase_image(F_num_val)
+    draw_amplitude_and_phase_image(tri2d(xx, yy), [f"amplitude of tri(x,y), a = {a}", "phase of tri(x,y)"])
+    draw_amplitude_and_phase_image(F_val, [f"amplitude of fft, a = {a}", f"phase of fft, b = {b}"])
+    draw_amplitude_and_phase_image(analitic, [f"amplitude of sinc^2(x,y), a = {a}", f"phase of sinc^2(x,y), b = {b}"])
+    draw_3d_surface(xx_b, yy_b, F_val, "algo")
+    draw_3d_surface(xx, yy, analitic, "analitic")
+    draw_3d_surface(xx, yy, z, "tri(x,y)")
 
 
 def main():
     # gauss_fft_script()
-    # tri_fft_script()
+    tri_fft_script()
     # gauss_2d_fft_script()
     tri_fft_script_2d()
     pylab.show()
@@ -317,11 +337,7 @@ def tests():
     xx, yy = np.meshgrid(x, x)
     z = tri2d(xx, yy)
 
-    figure = pylab.figure(curr_figure)
-    curr_figure = curr_figure + 1
-
-    ax = figure.add_subplot(111, projection='3d')
-    ax.plot_wireframe(xx, yy, z)
+    draw_3d_surface(xx, yy, z)
     pylab.show()
 
     pass
