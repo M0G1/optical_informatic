@@ -19,8 +19,8 @@ def get_m(n: int):
     elder_bit_num = int.bit_length(n) + 1
     m = 1 << elder_bit_num
     # делаем M намного больше n
-    while m // n < 4:
-        m = m << 1
+    # while m // n < 2:
+    #     m = m << 1
     return m
 
 
@@ -58,7 +58,6 @@ def ft_finite_algo(f_val, a: float, h_x: float):
     m = get_m(n)
     f_val_added_zero = add_zeros(f_val, m)
     f_val_added_swapped = swap_half_array_between(f_val_added_zero)
-
     F_val_added_swapped = np.fft.fft(f_val_added_swapped)
     F_val_added_zero = swap_half_array_between(F_val_added_swapped)
     # cut n values
@@ -68,7 +67,6 @@ def ft_finite_algo(f_val, a: float, h_x: float):
     F_val = F_val_added_zero[left_index: right_index] * h_x
     get_b = lambda n, a: (n ** 2 / (4 * a * m))
 
-    # checking results
     #     print(f"""The line segment is [{-a},{a}]
     # n= {n}
     # m = {m}
@@ -212,7 +210,7 @@ def tri2d(x, y):
 
 
 def gauss_fft_script():
-    n = 110
+    n = 150
     a = 5
     s = 1
     x, h_x = np.linspace(-a, a, n, retstep=True)
@@ -222,7 +220,7 @@ def gauss_fft_script():
     x_for_b = np.linspace(-b, b, n)
     print(f"fft: h_x={h_x}, m={m}, b={b}")
 
-    F_num_val, mm, bb = ft_finite_num(a, n, gauss)
+    F_num_val, mm, bb = ft_finite_num(gauss, a, n)
     # F_tri_val_arg = left_triangle_Fourier_arg(f_val, x, x_for_b)
     print(f"fft: m={mm}, b={bb}")
     print(
@@ -234,15 +232,15 @@ def gauss_fft_script():
 
     border_x = np.array([-a, a])  # + [-0.5, 0.5]
     gauss_note = f"Gauss, s={s}"
-    b_note = f", b = {b}"
+    b_note = ", b = %.2f" % b
     ff_gaus = "fft of Gauss" + b_note
-    amn = f", a = {a}, n={n}, m={m}"
+    amn = f",\n a = {a}, n={n}, m={m}"
     union_note = gauss_note + " and " + ff_gaus + amn
-    labels = ["left triangle Gauss", " fft Gauss", " Gauss"]
+    labels = ["quad integrate Ft", " fft of Gauss"]
 
-    draw_amplitude_and_phase([x_for_b, x_for_b, x], [F_num_val, F_val, y],
+    draw_amplitude_and_phase([x_for_b, x_for_b], [F_num_val, F_val],
                              title_note=union_note, labels=labels)
-    draw_amplitude_and_phase(x, y, title_note=gauss_note + amn)
+    draw_amplitude_and_phase(x, y, title_note=gauss_note + f" a = {a}")
     # draw_amplitude_and_phase(x_for_b, F_val, title_note=ff_gaus + amn)
     # draw_amplitude_and_phase(x_for_b, F_num_val, title_note=left_trian_Fourier_note)
     # pylab.legend()
@@ -269,7 +267,7 @@ def gauss_2d_fft_script():
 
 
 def tri_fft_script():
-    n = 90
+    n = 100
     a = 4
     x, h_x = np.linspace(-a, a, n, retstep=True)
     y = tri(x)
@@ -286,9 +284,10 @@ def tri_fft_script():
     ]
     xlim = None  # [-2.1,-1.9]
 
-    draw_amplitude_and_phase(x, y, title_note="triangle")
+    draw_amplitude_and_phase(x, y, title_note="triangular function a=%.2f" % a)
     draw_amplitude_and_phase([x_for_b, x_for_b, x_for_b], [F_num_val, F_val, analicit],
-                             title_note="fft and ft of tri b=%s" % (str(b)), xlim=xlim, labels=labels)
+                             title_note="fft and ft of tri b=%.2f, a=%.2f\nn=%d, m = %d" % (b, a, n, m), xlim=xlim,
+                             labels=labels)
 
 
 def tri_fft_script_2d():
@@ -302,11 +301,12 @@ def tri_fft_script_2d():
     x_b = np.linspace(-b, b, n)
     xx_b, yy_b = np.meshgrid(x_b, x_b)
     print(F_val.shape)
+    print(f"m = {m}")
 
     draw_amplitude_and_phase_image(tri2d(xx, yy), [f"amplitude of tri(x,y), a = {a}", "phase of tri(x,y)"])
     draw_amplitude_and_phase_image(F_val, [f"amplitude of fft, a = {a}", f"phase of fft, b = {b}"])
     draw_amplitude_and_phase_image(analitic, [f"amplitude of sinc^2(x,y), a = {a}", f"phase of sinc^2(x,y), b = {b}"])
-    draw_3d_surface(xx_b, yy_b, F_val, "algo")
+    draw_3d_surface(xx, yy, F_val, "algo")
     draw_3d_surface(xx, yy, analitic, "analitic")
     draw_3d_surface(xx, yy, z, "tri(x,y)")
 
@@ -315,7 +315,7 @@ def main():
     # gauss_fft_script()
     tri_fft_script()
     # gauss_2d_fft_script()
-    tri_fft_script_2d()
+    # tri_fft_script_2d()
     pylab.show()
 
 
