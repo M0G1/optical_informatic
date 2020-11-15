@@ -173,7 +173,7 @@ def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "
         axes[1].plot(x_list[i], f_val_list[i][1], color=colors[i], label=labels[i], alpha=alpha)
 
 
-def draw_amplitude_and_phase_image(image, titles=None):
+def draw_amplitude_and_phase_image(image, titles=None, vmin=None, vmax=None):
     global curr_figure
     pylab.figure(curr_figure)
     curr_figure = curr_figure + 1
@@ -181,7 +181,7 @@ def draw_amplitude_and_phase_image(image, titles=None):
 
     fig, axes = pylab.subplots(1, 2, figsize=(12, 5))
     amplitude = axes[0].imshow(np.absolute(image), cmap="hot")
-    phase = axes[1].imshow(np.angle(image), cmap="hot")
+    phase = axes[1].imshow(np.angle(image), cmap="hot", vmin=vmin, vmax=vmax)
     fig.colorbar(phase, ax=axes[1])
     if titles is not None:
         for i in range(2):
@@ -256,14 +256,15 @@ def gauss_2d_fft_script():
     xx, yy = np.meshgrid(x, x)
     z = gauss_2d(xx, yy)
     F_val, m, b = ft_finite_algo_2d(z, a, h_x)
-    F_num_val, m, b = ft_finite_num_2d(get_gauss(1), a, n)
+    # F_num_val, m, b = ft_finite_num_2d(get_gauss(1), a, n)
 
     # print(F_val.shape)
     # print(F_num_val.shape)
 
-    draw_amplitude_and_phase_image(z)
-    draw_amplitude_and_phase_image(F_val)
-    draw_amplitude_and_phase_image(F_num_val)
+    draw_amplitude_and_phase_image(z, [f"Amplitude of Gauss s = {s}", f"Phase of Gauss p = {p}"])
+    draw_amplitude_and_phase_image(F_val, ["Amplitude of FFT", "Phase of FFT"])
+
+    # draw_amplitude_and_phase_image(F_num_val)
 
 
 def tri_fft_script():
@@ -297,25 +298,28 @@ def tri_fft_script_2d():
     xx, yy = np.meshgrid(x, x)
     z = tri2d(xx, yy)
     F_val, m, b = ft_finite_algo_2d(z, a, h_x)
-    analitic = (np.sinc(xx) * np.sinc(yy)) ** 2
+
     x_b = np.linspace(-b, b, n)
     xx_b, yy_b = np.meshgrid(x_b, x_b)
+    analitic = (np.sinc(xx_b) * np.sinc(yy_b)) ** 2
     print(F_val.shape)
     print(f"m = {m}")
+    print(z.shape)
+    print(np.max(np.max(z)))
 
-    draw_amplitude_and_phase_image(tri2d(xx, yy), [f"amplitude of tri(x,y), a = {a}", "phase of tri(x,y)"])
+    draw_amplitude_and_phase_image(z, [f"amplitude of tri(x,y), a = {a}", "phase of tri(x,y)"])
     draw_amplitude_and_phase_image(F_val, [f"amplitude of fft, a = {a}", f"phase of fft, b = {b}"])
     draw_amplitude_and_phase_image(analitic, [f"amplitude of sinc^2(x,y), a = {a}", f"phase of sinc^2(x,y), b = {b}"])
-    draw_3d_surface(xx, yy, F_val, "algo")
-    draw_3d_surface(xx, yy, analitic, "analitic")
+    draw_3d_surface(xx_b, yy_b, F_val, "algo")
+    draw_3d_surface(xx_b, yy_b, analitic, "analitic")
     draw_3d_surface(xx, yy, z, "tri(x,y)")
 
 
 def main():
-    # gauss_fft_script()
+    gauss_fft_script()
     tri_fft_script()
-    # gauss_2d_fft_script()
-    # tri_fft_script_2d()
+    gauss_2d_fft_script()
+    tri_fft_script_2d()
     pylab.show()
 
 
