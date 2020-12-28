@@ -19,8 +19,8 @@ def get_m(n: int):
     elder_bit_num = int.bit_length(n) + 1
     m = 1 << elder_bit_num
     # делаем M намного больше n
-    # while m // n < 2:
-    #     m = m << 1
+    while m // n < 2:
+        m = m << 1
     return m
 
 
@@ -35,7 +35,7 @@ def swap_half_array_between(x: (np.array, np.ndarray, np.nditer)):
 
 
 def add_zeros(x, m):
-    zero = np.zeros(m)
+    zero = np.zeros(m, dtype=np.complex_)
     n = len(x)
     left_index = ((m - n) // 2)
     right_index = n + left_index
@@ -45,17 +45,17 @@ def add_zeros(x, m):
     return zero
 
 
-def ft_finite_algo(f_val, a: float, h_x: float):
+def ft_finite_algo(f_val, a: float, h_x: float, m: int = None):
     """
     param f_val: function values
-    param n: needed vector point count
-    param a: the right border of line segment [-a,a]
-    param ft: Fourier transform
+    param a: right border of integrate interval
+    param m:  add zeros in both sides before length
     return F,b
     Fourier transform and the right border of line segment [-b,b]
     """
     n = len(f_val)
-    m = get_m(n)
+    if not m:
+        m = get_m(n)
     f_val_added_zero = add_zeros(f_val, m)
     f_val_added_swapped = swap_half_array_between(f_val_added_zero)
     F_val_added_swapped = np.fft.fft(f_val_added_swapped)
@@ -77,15 +77,22 @@ def ft_finite_algo(f_val, a: float, h_x: float):
     return F_val, m, get_b(n, a)
 
 
-def ft_finite_algo_2d(matrix, a: float, h_x: float):
+def ft_finite_algo_2d(matrix, a: float, h_x: float, m: int = None):
     n = matrix.shape[0]
-    m, b = None, None
-    answer = np.zeros(matrix.shape)
+    is_m_given = m is not None
+    b = None
+    answer = np.zeros(matrix.shape, dtype=matrix.dtype)
     for i in range(n):
-        answer[i, :], m, b = ft_finite_algo(matrix[i, :], a, h_x)
+        if is_m_given:
+            answer[i, :], m, b = ft_finite_algo(matrix[i, :], a, h_x, m=m)
+        else:
+            answer[i, :], m, b = ft_finite_algo(matrix[i, :], a, h_x)
 
     for j in range(n):
-        answer[:, j], m, b = ft_finite_algo(answer[:, j], a, h_x)
+        if is_m_given:
+            answer[:, j], m, b = ft_finite_algo(answer[:, j], a, h_x, m=m)
+        else:
+            answer[:, j], m, b = ft_finite_algo(answer[:, j], a, h_x)
 
     return answer, m, b
 
@@ -122,7 +129,7 @@ def ft_finite_num_2d(f, a: float, n: int):
 
 
 def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "", xlabel: str = "x", xlim=None,
-                             labels: list = None, alpha: float = 1, is_vertical=True):
+                             labels: list = None, alpha: float = 1, is_vertical=True, is_need_grid: bool = False):
     """
     param x: abscissas of coordinates
     param f_val: array with complex elements
@@ -164,6 +171,8 @@ def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "
     for i in range(len(x_list)):
         axes[0].plot(x_list[i], f_val_list[i][0], color=colors[i], label=labels[i], alpha=alpha)
     axes[0].legend() if is_legend_on else None
+    if is_need_grid:
+        axes[0].grid(True)
 
     axes[1].set_xlabel(xlabel)
     axes[1].set_ylabel("Phase")
@@ -171,6 +180,8 @@ def draw_amplitude_and_phase(x, f_val, colors: str = "blue", title_note: str = "
     axes[1].xlim(xlim) if xlim is not None else None
     for i in range(len(x_list)):
         axes[1].plot(x_list[i], f_val_list[i][1], color=colors[i], label=labels[i], alpha=alpha)
+    if is_need_grid:
+        axes[1].grid(True)
 
 
 def draw_amplitude_and_phase_image(image, titles=None, vmin=None, vmax=None):
@@ -179,8 +190,10 @@ def draw_amplitude_and_phase_image(image, titles=None, vmin=None, vmax=None):
     curr_figure = curr_figure + 1
     print(f"cur_figure {curr_figure}")
 
+    # print(f"{}")
     fig, axes = pylab.subplots(1, 2, figsize=(12, 5))
     amplitude = axes[0].imshow(np.absolute(image), cmap="hot")
+    fig.colorbar(amplitude, ax=axes[0])
     phase = axes[1].imshow(np.angle(image), cmap="hot", vmin=vmin, vmax=vmax)
     fig.colorbar(phase, ax=axes[1])
     if titles is not None:
@@ -317,9 +330,9 @@ def tri_fft_script_2d():
 
 def main():
     gauss_fft_script()
-    tri_fft_script()
-    gauss_2d_fft_script()
-    tri_fft_script_2d()
+    # tri_fft_script()
+    # gauss_2d_fft_script()
+    # tri_fft_script_2d()
     pylab.show()
 
 
